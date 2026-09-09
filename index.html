@@ -3,11 +3,27 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>OpenScribe</title>
-<meta name="description" content="A Google Colab notebook that transcribes video with Whisper large-v3 on your own free GPU. No server, no account, no subscription.">
-<meta property="og:title" content="OpenScribe">
-<meta property="og:description" content="Your video, your GPU, your transcript. Whisper large-v3 in a Colab notebook — free, open source, no server involved.">
+<title>OpenScribe — free Whisper large-v3 video transcription in Google Colab</title>
+<meta name="description" content="Transcribe video to TXT, SRT, VTT and JSON with OpenAI's Whisper large-v3, running free on your own Google Colab GPU. Open source, no account, no subscription.">
+<link rel="canonical" href="https://faisal-saddique.github.io/openscribe/">
+<meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1">
+<meta name="author" content="Faisal Saddique">
+<meta name="theme-color" content="#F1F2EE" media="(prefers-color-scheme:light)">
+<meta name="theme-color" content="#121411" media="(prefers-color-scheme:dark)">
 <meta property="og:type" content="website">
+<meta property="og:site_name" content="OpenScribe">
+<meta property="og:url" content="https://faisal-saddique.github.io/openscribe/">
+<meta property="og:title" content="OpenScribe — free Whisper transcription on your own Colab GPU">
+<meta property="og:description" content="Your video, your GPU, your transcript. Whisper large-v3 in a Google Colab notebook — free, open source, no server involved.">
+<meta property="og:image" content="https://faisal-saddique.github.io/openscribe/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="OpenScribe — Whisper large-v3 transcription on your own Google Colab GPU">
+<meta property="og:locale" content="en_US">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="OpenScribe — free Whisper transcription on your own Colab GPU">
+<meta name="twitter:description" content="Whisper large-v3 in a Colab notebook. TXT, SRT, VTT, TSV and JSON out. No server, no account, no subscription.">
+<meta name="twitter:image" content="https://faisal-saddique.github.io/openscribe/og.png">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%234C6B3C'/%3E%3Cg fill='%23F1F2EE'%3E%3Crect x='7' y='13' width='2.5' height='6' rx='1.25'/%3E%3Crect x='12' y='9' width='2.5' height='14' rx='1.25'/%3E%3Crect x='17' y='11' width='2.5' height='10' rx='1.25'/%3E%3Crect x='22' y='14' width='2.5' height='4' rx='1.25'/%3E%3C/g%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -307,6 +323,69 @@ ul{margin:0;padding:0;list-style:none}
   *{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
 }
 </style>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "SoftwareApplication",
+      "@id": "https://faisal-saddique.github.io/openscribe/#app",
+      "name": "OpenScribe",
+      "description": "A Google Colab notebook that transcribes video and audio with OpenAI's Whisper large-v3 on your own free Colab GPU, producing TXT, SRT, VTT, TSV and JSON with word-level timestamps.",
+      "url": "https://faisal-saddique.github.io/openscribe/",
+      "applicationCategory": "MultimediaApplication",
+      "applicationSubCategory": "Speech to text transcription",
+      "operatingSystem": "Any (runs in a browser via Google Colab)",
+      "softwareRequirements": "A Google account with Colab access",
+      "license": "https://opensource.org/licenses/MIT",
+      "codeRepository": "https://github.com/faisal-saddique/openscribe",
+      "programmingLanguage": "Python",
+      "isAccessibleForFree": true,
+      "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+      "author": { "@type": "Person", "name": "Faisal Saddique" },
+      "featureList": [
+        "OpenAI Whisper large-v3 transcription",
+        "Runs on the user's own free Google Colab GPU",
+        "Outputs TXT, SRT, VTT, TSV and JSON",
+        "Word-level timestamps and per-segment confidence",
+        "Accepts file upload, Google Drive, or a direct URL",
+        "Voice-activity filtering to reduce hallucinated text"
+      ]
+    },
+    {
+      "@type": "FAQPage",
+      "@id": "https://faisal-saddique.github.io/openscribe/#faq",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "Why is OpenScribe free?",
+          "acceptedAnswer": { "@type": "Answer", "text": "It runs on the free GPU in your own Google Colab account rather than on a server the author pays for, so there is no hosting cost to recover. The notebook is MIT licensed and there is no paid tier." }
+        },
+        {
+          "@type": "Question",
+          "name": "Does my video get uploaded to someone else's server?",
+          "acceptedAnswer": { "@type": "Answer", "text": "No. The file goes from your machine, or straight from a link, into your own Colab runtime. There is no third-party backend in the path to store, log or train on it." }
+        },
+        {
+          "@type": "Question",
+          "name": "Which Whisper model does it use?",
+          "acceptedAnswer": { "@type": "Answer", "text": "Whisper large-v3 by default, the most accurate release. large-v3-turbo, large-v2, medium.en and small.en are selectable from a dropdown. On a free Colab T4 it runs at roughly 8 to 12 times real time, so an hour of audio takes about 5 to 8 minutes." }
+        },
+        {
+          "@type": "Question",
+          "name": "Does it identify who is speaking?",
+          "acceptedAnswer": { "@type": "Answer", "text": "No. Whisper does not do speaker diarisation, so you get the words but not the speaker labels. The JSON output includes word-level timestamps, which you can align against a diarisation model such as pyannote.audio if you need speakers." }
+        },
+        {
+          "@type": "Question",
+          "name": "What file formats does it accept and produce?",
+          "acceptedAnswer": { "@type": "Answer", "text": "It reads anything ffmpeg can decode, including mp4, mov, mkv, webm, avi, m4a, mp3 and wav. It writes plain text, SubRip subtitles (.srt), WebVTT subtitles (.vtt), a timestamped .tsv table, and a .json file with word timings and confidence scores." }
+        }
+      ]
+    }
+  ]
+}
+</script>
 </head>
 <body>
 
@@ -328,7 +407,8 @@ ul{margin:0;padding:0;list-style:none}
     <p class="lede">
       OpenScribe is a Google Colab notebook that runs OpenAI's Whisper <b>large-v3</b>
       on the free GPU Google already gives you. Nothing uploads to my server —
-      because I don't have one.
+      because I don't have one. Meeting recordings, lectures, interviews, podcasts:
+      anything with speech in it.
     </p>
 
     <div class="actions">
@@ -375,7 +455,7 @@ ul{margin:0;padding:0;list-style:none}
   </section>
 
   <!-- ── why free ───────────────────────── -->
-  <section class="wrap section">
+  <section class="wrap section" id="why-free">
     <p class="eyebrow">Why it's free</p>
     <h2>Because it costs me nothing to give you.</h2>
     <p class="intro">
@@ -405,7 +485,7 @@ ul{margin:0;padding:0;list-style:none}
   </section>
 
   <!-- ── what you get ───────────────────── -->
-  <section class="wrap section">
+  <section class="wrap section" id="features">
     <p class="eyebrow">What you get</p>
     <h2>The good model, not the cheap one.</h2>
     <p class="intro">
@@ -442,7 +522,7 @@ ul{margin:0;padding:0;list-style:none}
   </section>
 
   <!-- ── how it works ───────────────────── -->
-  <section class="wrap section">
+  <section class="wrap section" id="how-it-works">
     <p class="eyebrow">Start to finish</p>
     <h2>About eight minutes for an hour of video.</h2>
     <p class="intro">
@@ -497,7 +577,7 @@ ul{margin:0;padding:0;list-style:none}
   </section>
 
   <!-- ── limits ─────────────────────────── -->
-  <section class="wrap section">
+  <section class="wrap section" id="limits">
     <p class="eyebrow">Before you rely on it</p>
     <h2>What it doesn't do.</h2>
     <p class="intro">
@@ -522,7 +602,7 @@ ul{margin:0;padding:0;list-style:none}
   </section>
 
   <!-- ── support ────────────────────────── -->
-  <section class="wrap section">
+  <section class="wrap section" id="support">
     <p class="eyebrow">If it helped</p>
     <h2>No paywall. No pro tier waiting for you.</h2>
 
