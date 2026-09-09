@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://faisal-saddique.github.io/openscribe/sitemap.xml
