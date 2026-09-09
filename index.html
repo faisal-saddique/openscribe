@@ -1,0 +1,588 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>OpenScribe</title>
+<meta name="description" content="A Google Colab notebook that transcribes video with Whisper large-v3 on your own free GPU. No server, no account, no subscription.">
+<meta property="og:title" content="OpenScribe">
+<meta property="og:description" content="Your video, your GPU, your transcript. Whisper large-v3 in a Colab notebook — free, open source, no server involved.">
+<meta property="og:type" content="website">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%234C6B3C'/%3E%3Cg fill='%23F1F2EE'%3E%3Crect x='7' y='13' width='2.5' height='6' rx='1.25'/%3E%3Crect x='12' y='9' width='2.5' height='14' rx='1.25'/%3E%3Crect x='17' y='11' width='2.5' height='10' rx='1.25'/%3E%3Crect x='22' y='14' width='2.5' height='4' rx='1.25'/%3E%3C/g%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Public+Sans:wght@400;500;600&display=swap">
+<style>
+/* ─────────────────────────────────────────────
+   OpenScribe — tokens
+   Light is the base. Dark redefines tokens only.
+   ───────────────────────────────────────────── */
+:root{
+  --paper:#F1F2EE;
+  --surface:#FBFBF9;
+  --ink:#1B1E19;
+  --ink-soft:#3C4239;
+  --muted:#6B7166;
+  --rule:#DCDFD6;
+  --rule-strong:#C3C8BA;
+  --accent:#4C6B3C;
+  --accent-hover:#3D5730;
+  --accent-wash:#E7EDE0;
+  --on-accent:#F7F9F4;
+  --shadow:0 1px 0 rgba(27,30,25,.04);
+
+  --f-display:"Newsreader",ui-serif,Georgia,"Times New Roman",serif;
+  --f-body:"Public Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+
+  --s--1:.8125rem;
+  --s-0:1.0625rem;
+  --s-1:1.1875rem;
+  --s-2:1.5rem;
+  --s-3:clamp(1.85rem,1.2rem + 2.6vw,2.6rem);
+  --s-4:clamp(2.4rem,1.4rem + 4.4vw,3.9rem);
+
+  --measure:35rem;
+  --gutter:clamp(1.25rem,5vw,3rem);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --paper:#121411;
+    --surface:#191C17;
+    --ink:#E9EBE4;
+    --ink-soft:#C6CABF;
+    --muted:#959B8E;
+    --rule:#2A2E26;
+    --rule-strong:#3A3F34;
+    --accent:#93B978;
+    --accent-hover:#A8C98F;
+    --accent-wash:#1D2617;
+    --on-accent:#121411;
+    --shadow:0 1px 0 rgba(0,0,0,.3);
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#121411;
+  --surface:#191C17;
+  --ink:#E9EBE4;
+  --ink-soft:#C6CABF;
+  --muted:#959B8E;
+  --rule:#2A2E26;
+  --rule-strong:#3A3F34;
+  --accent:#93B978;
+  --accent-hover:#A8C98F;
+  --accent-wash:#1D2617;
+  --on-accent:#121411;
+  --shadow:0 1px 0 rgba(0,0,0,.3);
+}
+
+*,*::before,*::after{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0;
+  background:var(--paper);
+  color:var(--ink);
+  font-family:var(--f-body);
+  font-size:var(--s-0);
+  line-height:1.6;
+  -webkit-font-smoothing:antialiased;
+  text-rendering:optimizeLegibility;
+}
+::selection{background:var(--accent-wash);color:var(--ink)}
+
+a{color:inherit;text-decoration:none}
+:focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:2px}
+
+h1,h2,h3{margin:0;font-weight:400;text-wrap:balance;letter-spacing:-.012em}
+p{margin:0}
+ul{margin:0;padding:0;list-style:none}
+
+.wrap{width:100%;max-width:54rem;margin-inline:auto;padding-inline:var(--gutter)}
+.col{max-width:var(--measure)}
+
+/* ── eyebrow label ───────────────────────── */
+.eyebrow{
+  font-family:var(--f-mono);
+  font-size:.6875rem;
+  font-weight:500;
+  letter-spacing:.14em;
+  text-transform:uppercase;
+  color:var(--muted);
+}
+
+/* ── header ──────────────────────────────── */
+.masthead{
+  border-bottom:1px solid var(--rule);
+  background:var(--paper);
+}
+.masthead .wrap{
+  display:flex;align-items:center;justify-content:space-between;
+  gap:1rem;padding-block:1.05rem;
+}
+.brand{display:flex;align-items:baseline;gap:.6rem}
+.brand-mark{
+  font-family:var(--f-display);
+  font-size:1.3rem;
+  letter-spacing:-.02em;
+}
+.brand-note{
+  font-family:var(--f-mono);font-size:.6875rem;color:var(--muted);
+  letter-spacing:.04em;
+}
+@media (max-width:34rem){.brand-note{display:none}}
+
+.themetoggle{
+  font-family:var(--f-mono);font-size:.6875rem;letter-spacing:.08em;
+  text-transform:uppercase;color:var(--muted);
+  background:none;border:1px solid var(--rule);border-radius:999px;
+  padding:.35rem .8rem;cursor:pointer;
+  transition:color .15s,border-color .15s;
+}
+.themetoggle:hover{color:var(--ink);border-color:var(--rule-strong)}
+
+/* ── hero ────────────────────────────────── */
+.hero{padding-block:clamp(3rem,9vw,5.5rem) clamp(2.5rem,6vw,4rem)}
+.hero h1{
+  font-family:var(--f-display);
+  font-size:var(--s-4);
+  line-height:1.06;
+  letter-spacing:-.028em;
+  max-width:15ch;
+}
+.hero h1 em{font-style:italic;color:var(--accent)}
+.hero .lede{
+  margin-top:1.4rem;max-width:var(--measure);
+  font-size:var(--s-1);color:var(--ink-soft);line-height:1.55;
+}
+
+.actions{display:flex;flex-wrap:wrap;gap:.7rem;margin-top:2rem}
+.btn{
+  display:inline-flex;align-items:center;gap:.55rem;
+  font-size:.9375rem;font-weight:500;
+  padding:.72rem 1.15rem;border-radius:7px;
+  border:1px solid transparent;
+  transition:background .15s,border-color .15s,color .15s;
+}
+.btn-primary{background:var(--accent);color:var(--on-accent)}
+.btn-primary:hover{background:var(--accent-hover)}
+.btn-ghost{border-color:var(--rule-strong);color:var(--ink)}
+.btn-ghost:hover{border-color:var(--ink-soft);background:var(--surface)}
+.btn svg{flex:none}
+
+.hero-note{
+  margin-top:1rem;font-size:var(--s--1);color:var(--muted);
+  font-family:var(--f-mono);
+}
+
+/* ── the srt specimen ────────────────────── */
+.specimen{
+  margin:clamp(2.5rem,6vw,3.5rem) 0 0;
+  border:1px solid var(--rule);
+  border-radius:10px;
+  background:var(--surface);
+  box-shadow:var(--shadow);
+  overflow:hidden;
+}
+.specimen-bar{
+  display:flex;align-items:center;justify-content:space-between;gap:1rem;
+  padding:.6rem .95rem;
+  border-bottom:1px solid var(--rule);
+  font-family:var(--f-mono);font-size:.6875rem;color:var(--muted);
+  letter-spacing:.05em;
+}
+.specimen-body{
+  padding:1.15rem .95rem 1.35rem;
+  overflow-x:auto;
+}
+.cue{display:grid;grid-template-columns:1.75rem 1fr;gap:0 .9rem;padding-block:.55rem}
+.cue + .cue{border-top:1px dashed var(--rule)}
+.cue-n{
+  font-family:var(--f-mono);font-size:.75rem;color:var(--muted);
+  font-variant-numeric:tabular-nums;padding-top:.15rem;
+}
+.cue-time{
+  font-family:var(--f-mono);font-size:.75rem;color:var(--accent);
+  font-variant-numeric:tabular-nums;white-space:nowrap;letter-spacing:-.01em;
+}
+.cue-text{margin-top:.25rem;font-size:.9375rem;color:var(--ink);line-height:1.45;max-width:44ch}
+
+/* ── generic section ─────────────────────── */
+.section{padding-block:clamp(2.75rem,7vw,4.25rem);border-top:1px solid var(--rule)}
+.section h2{
+  font-family:var(--f-display);font-size:var(--s-3);
+  line-height:1.15;margin-top:.85rem;max-width:18ch;
+}
+.section .intro{margin-top:1.05rem;max-width:var(--measure);color:var(--ink-soft)}
+
+/* ── plain fact list ─────────────────────── */
+.facts{margin-top:2rem;display:grid;gap:0;max-width:var(--measure)}
+.fact{padding-block:1.05rem;border-top:1px solid var(--rule)}
+.fact:last-child{border-bottom:1px solid var(--rule)}
+.fact h3{font-size:var(--s-0);font-weight:600;letter-spacing:0}
+.fact p{margin-top:.35rem;color:var(--muted);font-size:.9375rem;line-height:1.55}
+
+/* ── spec grid ───────────────────────────── */
+.specs{
+  margin-top:2rem;display:grid;gap:1px;
+  grid-template-columns:repeat(auto-fit,minmax(13.5rem,1fr));
+  background:var(--rule);border:1px solid var(--rule);border-radius:10px;
+  overflow:hidden;
+}
+.spec{background:var(--surface);padding:1.15rem 1.1rem 1.25rem}
+.spec dt{font-family:var(--f-mono);font-size:.6875rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.spec dd{margin:.5rem 0 0;font-size:.9375rem;color:var(--ink);line-height:1.5}
+.spec dd b{font-weight:600}
+.spec dd .mono{font-family:var(--f-mono);font-size:.875rem;font-variant-numeric:tabular-nums}
+
+/* ── timeline (the spine) ────────────────── */
+.timeline{margin-top:2.25rem;max-width:38rem}
+.step{
+  display:grid;grid-template-columns:5.25rem 1fr;gap:0 1.35rem;
+  position:relative;padding-bottom:1.6rem;
+}
+.step-time{
+  font-family:var(--f-mono);font-size:.8125rem;color:var(--muted);
+  font-variant-numeric:tabular-nums;padding-top:.1rem;text-align:right;
+}
+.step-body{
+  border-left:1px solid var(--rule);
+  padding-left:1.35rem;padding-bottom:.2rem;position:relative;
+}
+.step:last-child .step-body{border-left-color:transparent}
+.step-body::before{
+  content:"";position:absolute;left:-4.5px;top:.55rem;
+  width:8px;height:8px;border-radius:50%;
+  background:var(--paper);border:1.5px solid var(--rule-strong);
+}
+.step:first-child .step-body::before{background:var(--accent);border-color:var(--accent)}
+.step-body h3{font-size:var(--s-0);font-weight:600;letter-spacing:0}
+.step-body p{margin-top:.3rem;color:var(--muted);font-size:.9375rem;line-height:1.55}
+.step-body code{
+  font-family:var(--f-mono);font-size:.8125rem;
+  background:var(--accent-wash);color:var(--ink);
+  padding:.1rem .32rem;border-radius:4px;
+}
+@media (max-width:30rem){
+  .step{grid-template-columns:1fr;gap:.2rem}
+  .step-time{text-align:left;padding-bottom:.3rem}
+  .step-body{border-left:none;padding-left:0}
+  .step-body::before{display:none}
+}
+
+/* ── limits ──────────────────────────────── */
+.limits{margin-top:1.9rem;max-width:var(--measure);display:grid;gap:0}
+.limit{padding-block:1.05rem;border-top:1px solid var(--rule)}
+.limit:last-child{border-bottom:1px solid var(--rule)}
+.limit p{font-size:.9375rem;color:var(--ink-soft);line-height:1.55}
+.limit p b{font-weight:600;color:var(--ink)}
+
+/* ── support ─────────────────────────────── */
+.support{
+  margin-top:1.9rem;max-width:var(--measure);
+  border:1px solid var(--rule);border-radius:10px;
+  background:var(--surface);padding:1.5rem 1.4rem 1.6rem;
+}
+.support p{color:var(--ink-soft);font-size:.9375rem;line-height:1.6}
+.support .coffee{
+  display:inline-flex;align-items:center;gap:.55rem;margin-top:1.15rem;
+  font-size:.9375rem;font-weight:500;
+  padding:.66rem 1.05rem;border-radius:7px;
+  border:1px solid var(--rule-strong);
+  transition:border-color .15s,background .15s;
+}
+.support .coffee:hover{border-color:var(--accent);background:var(--accent-wash)}
+
+/* ── footer ──────────────────────────────── */
+.foot{border-top:1px solid var(--rule);padding-block:2rem 3rem;margin-top:.5rem}
+.foot .wrap{display:flex;flex-wrap:wrap;gap:.6rem 1.5rem;justify-content:space-between;align-items:baseline}
+.foot p,.foot li{font-size:var(--s--1);color:var(--muted)}
+.foot ul{display:flex;flex-wrap:wrap;gap:1.1rem}
+.foot a{border-bottom:1px solid var(--rule-strong);padding-bottom:1px}
+.foot a:hover{color:var(--ink);border-color:var(--ink)}
+
+.inline-link{color:var(--accent);border-bottom:1px solid color-mix(in srgb,var(--accent) 35%,transparent);padding-bottom:1px}
+.inline-link:hover{border-bottom-color:var(--accent)}
+
+@media (prefers-reduced-motion:reduce){
+  *{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
+}
+</style>
+</head>
+<body>
+
+<header class="masthead">
+  <div class="wrap">
+    <div class="brand">
+      <span class="brand-mark">OpenScribe</span>
+      <span class="brand-note">whisper large-v3 · colab</span>
+    </div>
+    <button class="themetoggle" id="themeBtn" type="button" aria-label="Switch colour theme">Theme</button>
+  </div>
+</header>
+
+<main>
+
+  <!-- ── hero ───────────────────────────── -->
+  <section class="wrap hero">
+    <h1>Your video, your GPU, your <em>transcript</em>.</h1>
+    <p class="lede">
+      OpenScribe is a Google Colab notebook that runs OpenAI's Whisper <b>large-v3</b>
+      on the free GPU Google already gives you. Nothing uploads to my server —
+      because I don't have one.
+    </p>
+
+    <div class="actions">
+      <a class="btn btn-primary" href="https://colab.research.google.com/github/faisal-saddique/openscribe/blob/main/OpenScribe.ipynb">
+        <svg width="15" height="15" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3.5l6 4.5-6 4.5z" fill="currentColor" stroke="none"/></svg>
+        Open in Colab
+      </a>
+      <a class="btn btn-ghost" href="https://github.com/faisal-saddique/openscribe">
+        <svg width="15" height="15" viewBox="0 0 16 16" aria-hidden="true" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
+        Source on GitHub
+      </a>
+    </div>
+    <p class="hero-note">free · open source · no account · no upload limit</p>
+
+    <figure class="specimen">
+      <figcaption class="specimen-bar">
+        <span>openscribe.srt</span>
+        <span>SubRip · UTF-8</span>
+      </figcaption>
+      <div class="specimen-body">
+        <div class="cue">
+          <span class="cue-n">1</span>
+          <div>
+            <span class="cue-time">00:00:00,000 &rarr; 00:00:04,120</span>
+            <p class="cue-text">There is no server here. You open a notebook and click Run.</p>
+          </div>
+        </div>
+        <div class="cue">
+          <span class="cue-n">2</span>
+          <div>
+            <span class="cue-time">00:00:04,120 &rarr; 00:00:09,480</span>
+            <p class="cue-text">Google lends you a T4 for a few hours a day. That is the whole trick.</p>
+          </div>
+        </div>
+        <div class="cue">
+          <span class="cue-n">3</span>
+          <div>
+            <span class="cue-time">00:00:09,480 &rarr; 00:00:13,900</span>
+            <p class="cue-text">Nobody is charging you for the compute. Including me.</p>
+          </div>
+        </div>
+      </div>
+    </figure>
+  </section>
+
+  <!-- ── why free ───────────────────────── -->
+  <section class="wrap section">
+    <p class="eyebrow">Why it's free</p>
+    <h2>Because it costs me nothing to give you.</h2>
+    <p class="intro">
+      Most transcription tools charge a monthly fee to rent you a GPU with a wrapper around it.
+      OpenScribe skips the middle step: the GPU is the one sitting unused in your own
+      Google account.
+    </p>
+
+    <div class="facts">
+      <div class="fact">
+        <h3>It runs in your Google account</h3>
+        <p>The notebook executes on Colab's free tier, under your login, using your quota. I never see the job, and I'm not paying for it.</p>
+      </div>
+      <div class="fact">
+        <h3>Your file doesn't pass through me</h3>
+        <p>Video goes from your machine — or straight from a link — into your own Colab runtime. There's no backend of mine in the path to store it, log it, or train on it.</p>
+      </div>
+      <div class="fact">
+        <h3>The whole thing is 400 lines of Python</h3>
+        <p>MIT licensed, readable in one sitting. Fork it, gut it, run it on your own hardware. Nothing is obfuscated and nothing phones home.</p>
+      </div>
+      <div class="fact">
+        <h3>The catch, stated plainly</h3>
+        <p>You do the clicking. It's a notebook, not a web app — you open it, pick a GPU runtime, and run the cells. If you want something that just takes an upload and emails you a file, this isn't it.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── what you get ───────────────────── -->
+  <section class="wrap section">
+    <p class="eyebrow">What you get</p>
+    <h2>The good model, not the cheap one.</h2>
+    <p class="intro">
+      Hosted tools quietly downgrade you to a smaller model on free plans.
+      This runs <b>large-v3</b> — the most accurate Whisper release — by default.
+    </p>
+
+    <dl class="specs">
+      <div class="spec">
+        <dt>Model</dt>
+        <dd><b>Whisper large-v3</b><br><span class="mono">1550M params · beam size 5</span></dd>
+      </div>
+      <div class="spec">
+        <dt>Speed on a free T4</dt>
+        <dd><b class="mono">8–12&times;</b> real time<br><span class="mono">60 min audio ≈ 5–8 min</span></dd>
+      </div>
+      <div class="spec">
+        <dt>Output formats</dt>
+        <dd><span class="mono">.txt .srt .vtt .tsv .json</span><br>word-level timestamps included</dd>
+      </div>
+      <div class="spec">
+        <dt>Input</dt>
+        <dd>File upload, Google Drive, or any direct link — Discord attachments and YouTube included</dd>
+      </div>
+      <div class="spec">
+        <dt>Languages</dt>
+        <dd>English tuned by default; 90+ others and English translation available in one dropdown</dd>
+      </div>
+      <div class="spec">
+        <dt>Hallucination guard</dt>
+        <dd>Voice-activity filtering, plus a pass that flags low-confidence and looping segments for you to check</dd>
+      </div>
+    </dl>
+  </section>
+
+  <!-- ── how it works ───────────────────── -->
+  <section class="wrap section">
+    <p class="eyebrow">Start to finish</p>
+    <h2>About eight minutes for an hour of video.</h2>
+    <p class="intro">
+      Elapsed time from opening the link, for a typical one-hour recording on Colab's free T4.
+      The long stretch in the middle is unattended.
+    </p>
+
+    <div class="timeline">
+      <div class="step">
+        <div class="step-time">00:00</div>
+        <div class="step-body">
+          <h3>Open the notebook</h3>
+          <p>The Colab button above. No install, no signup beyond the Google account you already have.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-time">00:20</div>
+        <div class="step-body">
+          <h3>Pick a GPU runtime</h3>
+          <p><code>Runtime → Change runtime type → T4 GPU</code>. The notebook checks this for you and says so if you've missed it.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-time">02:00</div>
+        <div class="step-body">
+          <h3>Install finishes</h3>
+          <p>Two Whisper backends land in the runtime. The faster one is default; it falls back automatically if Colab's CUDA image misbehaves.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-time">02:30</div>
+        <div class="step-body">
+          <h3>Hand it your video</h3>
+          <p>Upload it, point at Google Drive, or paste a link and let Colab pull it down directly — far quicker than pushing a large file through your browser.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-time">03:00</div>
+        <div class="step-body">
+          <h3>Transcription runs</h3>
+          <p>Progress bar in seconds of audio processed. Walk away; the tab can sit in the background.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-time">08:00</div>
+        <div class="step-body">
+          <h3>Files land</h3>
+          <p>Five formats zipped for download, or written straight back to your Drive if you'd rather.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── limits ─────────────────────────── -->
+  <section class="wrap section">
+    <p class="eyebrow">Before you rely on it</p>
+    <h2>What it doesn't do.</h2>
+    <p class="intro">
+      Nothing here is hidden in a FAQ. These are the real limits, and for some
+      jobs they'll be dealbreakers.
+    </p>
+
+    <div class="limits">
+      <div class="limit">
+        <p><b>No speaker labels.</b> Whisper doesn't do diarisation, so you get the words, not who said them. The word-level timestamps in the JSON are there if you want to bolt on a diarisation model yourself.</p>
+      </div>
+      <div class="limit">
+        <p><b>Colab's free tier can disconnect.</b> Long sessions get reclaimed at busy times, and GPU availability isn't guaranteed. Past about two hours of audio, switch to the turbo model or use Colab Pro.</p>
+      </div>
+      <div class="limit">
+        <p><b>Whisper can invent text over silence.</b> It's a known failure mode of the model, not of this notebook. Voice-activity filtering suppresses most of it, and the quality-check cell flags what's left — but skim the output before you trust it.</p>
+      </div>
+      <div class="limit">
+        <p><b>It's a notebook, not a product.</b> No API, no team accounts, no integrations, no support queue. If you need transcription inside a business workflow, pay a real vendor — that's a fair use of money.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── support ────────────────────────── -->
+  <section class="wrap section">
+    <p class="eyebrow">If it helped</p>
+    <h2>No paywall. No pro tier waiting for you.</h2>
+
+    <div class="support">
+      <p>
+        There's no upsell coming and nothing to unlock — the notebook you get today is the
+        whole thing. If it saved you an afternoon of typing, or the price of a subscription
+        you were about to start, you're welcome to buy me a coffee. If you'd rather not,
+        that's completely fine; use it anyway.
+      </p>
+      <a class="coffee" href="https://buymeacoffee.com/faisalsaddique" rel="noopener">
+        <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M2.5 6h9v4.5a3 3 0 0 1-3 3h-3a3 3 0 0 1-3-3V6z"/>
+          <path d="M11.5 7h1.25a1.75 1.75 0 0 1 0 3.5H11.5"/>
+          <path d="M5 3.4V2M8 3.4V2"/>
+        </svg>
+        Buy me a coffee
+      </a>
+    </div>
+  </section>
+
+</main>
+
+<footer class="foot">
+  <div class="wrap">
+    <p>Built by Faisal Saddique. MIT licensed.</p>
+    <ul>
+      <li><a href="https://github.com/faisal-saddique/openscribe">GitHub</a></li>
+      <li><a href="https://github.com/openai/whisper">Whisper</a></li>
+      <li><a href="https://github.com/SYSTRAN/faster-whisper">faster-whisper</a></li>
+      <li><a href="https://buymeacoffee.com/faisalsaddique">Support</a></li>
+    </ul>
+  </div>
+</footer>
+
+<script>
+(function () {
+  var root = document.documentElement;
+  var btn = document.getElementById("themeBtn");
+  var KEY = "openscribe-theme";
+
+  try {
+    var saved = localStorage.getItem(KEY);
+    if (saved === "dark" || saved === "light") root.setAttribute("data-theme", saved);
+  } catch (e) { /* private mode — fall through to system theme */ }
+
+  function current() {
+    var set = root.getAttribute("data-theme");
+    if (set) return set;
+    return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+  }
+
+  btn.addEventListener("click", function () {
+    var next = current() === "dark" ? "light" : "dark";
+    root.setAttribute("data-theme", next);
+    try { localStorage.setItem(KEY, next); } catch (e) { /* not persisted */ }
+    btn.setAttribute("aria-label", "Switch to " + (next === "dark" ? "light" : "dark") + " theme");
+  });
+})();
+</script>
+
+</body>
+</html>
